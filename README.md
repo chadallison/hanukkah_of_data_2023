@@ -81,14 +81,14 @@ name_to_num = function(name) {
   paste(values, collapse = "")
 }
 
-data |>
+x = data |>
   mutate(name_as_num = sapply(split_name, name_to_num)) |>
-  filter(phone_clean == name_as_num)
+  filter(phone_clean == name_as_num) |>
+  pull(name_as_num)
+
+sprintf("solution: %s", paste0(substr(x, 1, 3), "-", substr(x, 4, 6), "-", substr(x, 7, 10)))
 ```
 
-    ## # A tibble: 1 × 4
-    ##   last_name  phone_clean split_name name_as_num
-    ##   <chr>      <chr>       <list>     <chr>      
-    ## 1 TANNENBAUM 8266362286  <chr [10]> 8266362286
+    ## [1] "solution: 826-636-2286"
 
 ------------------------------------------------------------------------
