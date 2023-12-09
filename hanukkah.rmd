@@ -13,6 +13,7 @@ library(tidyverse)
 - [Data Import]
 - [The Investigator]
 - [The Contractor]
+- [The Neighbor]
 
 ___
 
@@ -50,33 +51,19 @@ data = customers |>
   filter(nchar(last_name) == nchar(phone_clean)) |>
   mutate(split_name = strsplit(last_name, ""))
 
+letter_values = c(A = 2, B = 2, C = 2, D = 3, E = 3, F = 3,
+                  G = 4, H = 4, I = 4, J = 5, K = 5, L = 5,
+                  M = 6, N = 6, O = 6, P = 7, Q = 7, R = 7,
+                  S = 7, T = 8, U = 8, V = 8, W = 9, X = 9, Y = 9, Z = 9)
+
 get_letter_value = function(letter) {
-  if (letter %in% c("A", "B", "C")) {
-    return(2)
-  } else if (letter %in% c("D", "E", "F")) {
-    return(3)
-  } else if (letter %in% c("G", "H", "I")) {
-    return(4)
-  } else if (letter %in% c("J", "K", "L")) {
-    return(5)
-  } else if (letter %in% c("M", "N", "O")) {
-    return(6)
-  } else if (letter %in% c("P", "Q", "R", "S")) {
-    return(7)
-  } else if (letter %in% c("T", "U", "V")) {
-    return(8)
-  } else if (letter %in% c("W", "X", "Y", "Z")) {
-    return(9)
-  }
+  return(letter_values[letter])
 }
 
 name_to_num = function(name) {
-  name_split = strsplit(name, "") |> unlist()
-  values = c()
-  for (letter in name_split) {
-    values = c(values, get_letter_value(letter))
-  }
-  paste(values, collapse = "")
+  letters = str_split(name, "") |> unlist()
+  values = sapply(letters, get_letter_value)
+  return(paste(values, collapse = ""))
 }
 
 x = data |>
@@ -85,6 +72,7 @@ x = data |>
   pull(name_as_num)
 
 sprintf("solution: %s", paste0(substr(x, 1, 3), "-", substr(x, 4, 6), "-", substr(x, 7, 10)))
+rm(data, letter_values, x, get_letter_value, name_to_num)
 ```
 
 ___
@@ -123,7 +111,47 @@ x = possible_products |>
   pull(phone)
 
 sprintf("solution: %s", x)
+rm(possible_customers, possible_orders, possible_products, x)
 ```
+
+___
+
+### The Neighbor
+
+Sarah and the investigator were very impressed with your data skills, as you were able to figure out the phone number of the contractor. They called up the cleaning contractor straight away and asked about the rug.
+
+“Oh, yeah, I did some special projects for them a few years ago. I remember that rug unfortunately. I managed to clean one section, which revealed a giant spider that startled me whenever I tried to work on it.
+
+“I already had a fear of spiders before this, but this spider was so realistic that I had a hard time making any more progress. I kept expecting the cleaners would call for the rug, but they never did. I felt so bad about it, I couldn’t face them, and of course they never gave me another project.
+
+“At last I couldn’t deal with the rug taking up my whole bathtub, so I gave it to this guy who lived in my neighborhood. He said that he was naturally intuitive because he was a Cancer born in the year of the Rabbit, so maybe he was able to clean it.
+
+“I don’t remember his name. Last time I saw him, he was leaving the subway and carrying a bag from Noah’s. I swore I saw a spider on his hat.”
+
+Can you find the phone number of the person that the contractor gave the rug to?
+
+```{r}
+years_of_rabbit = c(1939, 1951, 1963, 1974, 1987, 1999, 2011)
+
+possible_customers = customers |>
+  filter(year(birthdate) %in% years_of_rabbit &
+        (month(birthdate) == 6 & day(birthdate) >= 21 | month(birthdate) == 7 & day(birthdate) <= 22))
+
+contractor_zip = customers |>
+  filter(phone == "332-274-4185") |>
+  pull(citystatezip) |>
+  str_extract("\\d+")
+
+x = possible_customers |>
+  filter(str_detect(citystatezip, contractor_zip)) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+rm(years_of_rabbit, possible_customers, contractor_zip, x)
+```
+
+___
+
 
 
 
