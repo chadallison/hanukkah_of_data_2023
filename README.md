@@ -7,6 +7,9 @@ Hanukkah of Data
 - [The Investigator](#the-investigator)
 - [The Contractor](#the-contractor)
 - [The Neighbor](#the-neighbor)
+- [The Early Bird](#the-early-bird)
+- [The Cat Lady](#the-cat-lady)
+- [The Bargain Hunter](#the-bargain-hunter)
 
 ------------------------------------------------------------------------
 
@@ -82,10 +85,6 @@ sprintf("solution: %s", paste0(substr(x, 1, 3), "-", substr(x, 4, 6), "-", subst
 
     ## [1] "solution: 826-636-2286"
 
-``` r
-rm(data, letter_values, x, get_letter_value, name_to_num)
-```
-
 ------------------------------------------------------------------------
 
 ### The Contractor
@@ -142,10 +141,6 @@ sprintf("solution: %s", x)
 
     ## [1] "solution: 332-274-4185"
 
-``` r
-rm(possible_customers, possible_orders, possible_products, x)
-```
-
 ------------------------------------------------------------------------
 
 ### The Neighbor
@@ -197,10 +192,6 @@ sprintf("solution: %s", x)
 
     ## [1] "solution: 917-288-9635"
 
-``` r
-rm(years_of_rabbit, possible_customers, contractor_zip, x)
-```
-
 ------------------------------------------------------------------------
 
 ### The Early Bird
@@ -243,10 +234,6 @@ sprintf("solution: %s", x)
 
     ## [1] "solution: 607-231-3605"
 
-``` r
-rm(x)
-```
-
 ------------------------------------------------------------------------
 
 ### The Cat Lady
@@ -282,3 +269,49 @@ sprintf("solution: %s", x)
 ```
 
     ## [1] "solution: 631-507-6048"
+
+------------------------------------------------------------------------
+
+### The Bargain Hunter
+
+“Why yes, I did have that rug for a little while in my living room! My
+cats can’t see a thing but they sure chased after the squirrel on it
+like it was dancing in front of their noses.
+
+“It was a nice rug and they were surely going to ruin it, so I gave it
+to my cousin, who was moving into a new place that had wood floors.
+
+“She refused to buy a new rug for herself–she said they were way too
+expensive. She’s always been very frugal, and she clips every coupon and
+shops every sale at Noah’s Market. In fact I like to tease her that Noah
+actually loses money whenever she comes in the store.
+
+“I think she’s been taking it too far lately though. Once the subway
+fare increased, she stopped coming to visit me. And she’s really slow to
+respond to my texts. I hope she remembers to invite me to the family
+reunion next year.”
+
+Can you find her cousin’s phone number?
+
+``` r
+expected_prices = items |>
+  group_by(orderid) |>
+  summarise(price = sum(unit_price))
+
+x = orders |>
+  inner_join(expected_prices, by = "orderid") |>
+  filter(price < total) |>
+  inner_join(items, by = "orderid") |>
+  inner_join(products, by = "sku") |>
+  filter(str_detect(desc, "Noah")) |>
+  filter(price < wholesale_cost) |>
+  inner_join(customers, by = "customerid") |>
+  slice_max(wholesale_cost, n = 1, with_ties = F) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 585-838-9161"
+
+------------------------------------------------------------------------
