@@ -202,3 +202,83 @@ rm(years_of_rabbit, possible_customers, contractor_zip, x)
 ```
 
 ------------------------------------------------------------------------
+
+### The Early Bird
+
+The investigator called the phone number you found and left a message,
+and a man soon called back:
+
+“Wow, that was years ago! It was quite an elegant tapestry.
+
+“It took a lot of patience, but I did manage to get the dirt out of one
+section, which uncovered a superb owl. I put it up on my wall, and
+sometimes at night I swear I could hear the owl hooting.
+
+“A few weeks later my bike chain broke on the way home, and I needed to
+get it fixed before work the next day. Thankfully, this woman I met on
+Tinder came over at 5am with her bike chain repair kit and some pastries
+from Noah’s. Apparently she liked to get up before dawn and claim the
+first pastries that came out of the oven.
+
+“I didn’t have any money or I would’ve paid her for her trouble. She
+really liked the tapestry, though, so I wound up giving it to her.
+
+“I don’t remember her name or anything else about her.”
+
+Can you find the bicycle fixer’s phone number?
+
+``` r
+x = products |>
+  filter(str_detect(sku, "BKY")) |>
+  inner_join(items, by = "sku") |>
+  filter(qty > 1) |>
+  inner_join(orders, by = "orderid") |>
+  filter(hour(shipped) == 4) |>
+  distinct(customerid) |>
+  inner_join(customers, by = "customerid") |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 607-231-3605"
+
+``` r
+rm(x)
+```
+
+------------------------------------------------------------------------
+
+### The Cat Lady
+
+“Yes, I did have that tapestry for a little bit. I even cleaned a
+blotchy section that turned out to be a friendly koala.
+
+“But it was still really dirty, so when I was going through a Marie
+Kondo phase, I decided it wasn’t sparking joy anymore.
+
+“I listed it on Freecycle, and a woman in Staten Island came to pick it
+up. She was wearing a ‘Noah’s Market’ sweatshirt, and it was just
+covered in cat hair. When I suggested that a clowder of cats might ruin
+such a fine tapestry, she looked at me funny. She said “I only have ten
+or eleven cats, and anyway they are getting quite old now, so I doubt
+they’d care about some old rug.”
+
+“It took her 20 minutes to stuff the tapestry into some plastic bags she
+brought because it was raining. I spent the evening cleaning my
+apartment.”
+
+What’s the phone number of the woman from Freecycle?
+
+``` r
+x = items |>
+  filter(str_detect(sku, "PET") & qty >= 10) |>
+  inner_join(orders, by = "orderid") |>
+  inner_join(customers, by = "customerid") |>
+  distinct(name, phone) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 631-507-6048"
