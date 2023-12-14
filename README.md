@@ -11,6 +11,7 @@ Hanukkah of Data
 - [The Cat Lady](#the-cat-lady)
 - [The Bargain Hunter](#the-bargain-hunter)
 - [The Meet Cute](#the-meet-cute)
+- [The Collector](#the-collector)
 
 ------------------------------------------------------------------------
 
@@ -375,3 +376,48 @@ sprintf("solution: %s", x)
 ```
 
     ## [1] "solution: 838-335-7157"
+
+------------------------------------------------------------------------
+
+### The Collector
+
+“Oh that damned woman! She moved in, clogged my bathtub, left her
+coupons all over the kitchen, and then just vanished one night without
+leaving so much as a note.
+
+Except she did leave behind that nasty carpet. I spent months cleaning
+one corner, only to discover a snake hiding in the branches! I knew then
+that she was never coming back, and I had to get it out of my sight.
+
+“Well, I don’t have any storage here, and it didn’t seem right to sell
+it, so I gave it to my sister. She wound up getting a newer and more
+expensive carpet, so she gave it to an acquaintance of hers who collects
+all sorts of junk. Apparently he owns an entire set of Noah’s
+collectibles! He probably still has the carpet, even.
+
+“My sister is away for the holidays, but I can have her call you in a
+few weeks.”
+
+The family dinner is tonight! Can you find the collector’s phone number
+in time?
+
+``` r
+x = items |>
+  inner_join(orders, by = "orderid") |>
+  inner_join(customers, by = "customerid") |>
+  inner_join(products, by = "sku") |>
+  filter(str_detect(sku, "COL")) |>
+  separate(desc, into = c("item", "color"), sep = " \\(") |>
+  mutate(color = str_remove_all(color, "\\)")) |>
+  group_by(customerid, item) |>
+  summarise(n_items = n_distinct(color),
+            .groups = "drop") |>
+  filter(n_items == 12) |>
+  distinct(customerid) |>
+  inner_join(customers, by = "customerid") |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 212-547-3518"
