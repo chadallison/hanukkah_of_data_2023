@@ -280,50 +280,40 @@ ___
 Can you figure out her ex-boyfriend’s phone number?
 
 ```{r}
-my_id = customers |>
+df = customers |>
   filter(phone == "585-838-9161") |>
-  pull(customerid)
-
-possible_dates = orders |>
-  filter(customerid == my_id) |>
-  inner_join(items, by = "orderid") |>
-  inner_join(products, by = "sku") |>
-  filter(str_detect(desc, "Noah") & str_detect(desc, "[()]")) |>
-  distinct(date(ordered)) |>
-  pull(1)
-
-possible_items = orders |>
-  filter(customerid == my_id) |>
-  inner_join(items, by = "orderid") |>
-  inner_join(products, by = "sku") |>
-  filter(str_detect(desc, "Noah") & str_detect(desc, "[()]")) |>
-  separate(desc, into = c("item", "color"), sep = " \\(") |>
-  distinct(item) |>
-  pull(item)
-
-x = orders |>
-  mutate(date = as_date(ordered)) |>
-  filter(date %in% possible_dates) |>
+  # select(customerid, name, phone) |>
   inner_join(items |>
+  inner_join(orders, by = "orderid") |>
+  # select(orderid, sku, customerid, ordered) |>
+  filter(str_detect(sku, "COL")), by = "customerid") |>
   inner_join(products, by = "sku") |>
-  filter(str_detect(desc, "Noah") & str_detect(desc, "[()]")) |>
+  select(customerid, name, phone, orderid, sku, ordered, desc) |>
   separate(desc, into = c("item", "color"), sep = " \\(") |>
-  filter(item %in% possible_items), by = "orderid") |>
-  filter(customerid != my_id) |>
+  mutate(color = str_remove_all(color, "\\)"),
+         min_order = ordered - minutes(1),
+         max_order = ordered + minutes(1))
+
+df2 = items |>
+  filter(str_detect(sku, "COL")) |>
+  inner_join(orders, by = "orderid") |>
+  inner_join(products, by = "sku") |>
+  separate(desc, into = c("item", "color"), sep = " \\(") |>
+  filter(item %in% df$item)
+
+sol = data.frame()
+
+for (i in 1:nrow(df)) {
+  sol = rbind(sol, df2 |> filter(item == df$item[i] & shipped >= df$min_order[i] & shipped <= df$max_order[i]))
+}
+
+x = (sol |>
   inner_join(customers, by = "customerid") |>
   distinct(name, phone) |>
-  filter(name == "Carlos Myers") |>
-  pull(phone)
+  pull(phone))[1]
 
 sprintf("solution: %s", x)
 ```
-
-```{r include = F}
-rm(my_id, possible_dates, possible_items, x)
-```
-
-
-
 
 
 
