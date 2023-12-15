@@ -546,35 +546,44 @@ ___
 ### The Meet Cute - Speedrun
 
 ```{r}
-good_id = customers |>
+df = customers |>
   filter(phone == "838-295-7143") |>
-  pull(customerid)
-
-good_order = orders |>
-  filter(customerid == good_id) |>
+  inner_join(orders, by = "customerid") |>
   inner_join(items, by = "orderid") |>
   inner_join(products, by = "sku") |>
-  filter(str_detect(desc, "Noah")) |>
-  separate(desc, into = c("item", "color"), sep = " \\(")
-
-good_ordered = good_order$ordered
-good_shipped = good_order$shipped
-good_item = good_order$item
-
-orders |>
-  inner_join(items, by = "orderid") |>
-  filter(str_detect(sku, "COL")) |>
-  inner_join(products, by = "sku") |>
+  filter(str_detect(desc, "[()]")) |>
   separate(desc, into = c("item", "color"), sep = " \\(") |>
-  filter(item == good_item) |>
-  filter(ordered >= good_ordered - minutes(15)) |>
-  filter(ordered <= good_ordered + minutes(15)) |>
+  mutate(color = str_remove_all(color, "\\)"))
+
+possible_orders = orders |>
+  filter(!customerid %in% df$customerid) |>
+  inner_join(items, by = "orderid") |>
+  inner_join(products, by = "sku") |>
+  filter(str_detect(desc, "[()]")) |>
+  separate(desc, into = c("item", "color"), sep = " \\(") |>
+  mutate(color = str_remove_all(color, "\\)")) |>
+  filter(item %in% df$item & as_date(ordered) %in% as_date(df$ordered))
+
+res = data.frame()
+
+for (i in 1:nrow(df)) {
+  valid = possible_orders |>
+    filter(item == df$item[i],
+           ordered >= df$ordered[i] - minutes(5),
+           ordered <= df$ordered[i] + minutes(5))
+  
+  if (nrow(valid) > 0) res = rbind(res, valid)
+}
+
+x = res |>
   inner_join(customers, by = "customerid") |>
-  distinct(name, phone)
+  pull(phone)
+
+sprintf("solution: %s", x)
 ```
 
 ```{r include = F}
-rm()
+rm(df, possible_orders, res, valid, x)
 ```
 
 ___
@@ -601,7 +610,7 @@ sprintf("solution: %s", x)
 ```
 
 ```{r include = F}
-rm(x)
+rm(x, customers, items, orders, products)
 ```
 
 ___
