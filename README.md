@@ -13,15 +13,27 @@ Hanukkah of Data
 - [The Meet Cute](#the-meet-cute)
 - [The Collector](#the-collector)
 
+### Speedrun Contents
+
+- [Data Import - Speedrun](#data-import---speedrun)
+- [The Investigator - Speedrun](#the-investigator---speedrun)
+- [The Contractor - Speedrun](#the-contractor---speedrun)
+- [The Neighbor - Speedrun](#the-neighbor---speedrun)
+- [The Early Bird - Speedrun](#the-early-bird---speedrun)
+- [The Cat Lady - Speedrun](#the-cat-lady---speedrun)
+- [The Bargain Hunter - Speedrun](#the-bargain-hunter---speedrun)
+- [The Meet Cute - Speedrun](#the-meet-cute---speedrun)
+- [The Collector - Speedrun](#the-collector---speedrun)
+
 ------------------------------------------------------------------------
 
 ### Data Import
 
 ``` r
-customers = read_csv("data/noahs-customers.csv", show_col_types = F)
-items = read_csv("data/noahs-orders_items.csv", show_col_types = F)
-orders = read_csv("data/noahs-orders.csv", show_col_types = F)
-products = read_csv("data/noahs-products.csv", show_col_types = F)
+customers = read_csv("data/regular/noahs-customers.csv", show_col_types = F)
+items = read_csv("data/regular/noahs-orders_items.csv", show_col_types = F)
+orders = read_csv("data/regular/noahs-orders.csv", show_col_types = F)
+products = read_csv("data/regular/noahs-products.csv", show_col_types = F)
 ```
 
 ------------------------------------------------------------------------
@@ -174,7 +186,7 @@ Can you find the phone number of the person that the contractor gave the
 rug to?
 
 ``` r
-years_of_rabbit = c(1939, 1951, 1963, 1974, 1987, 1999, 2011)
+years_of_rabbit = c(1939, 1951, 1963, 1975, 1987, 1999, 2011)
 
 possible_customers = customers |>
   filter(year(birthdate) %in% years_of_rabbit &
@@ -264,6 +276,7 @@ x = items |>
   filter(str_detect(sku, "PET") & qty >= 10) |>
   inner_join(orders, by = "orderid") |>
   inner_join(customers, by = "customerid") |>
+  filter(str_detect(citystatezip, "Staten Island")) |>
   distinct(name, phone) |>
   pull(phone)
 
@@ -296,19 +309,18 @@ reunion next year.”
 Can you find her cousin’s phone number?
 
 ``` r
-expected_prices = items |>
-  group_by(orderid) |>
-  summarise(price = sum(unit_price))
-
-x = orders |>
-  inner_join(expected_prices, by = "orderid") |>
-  filter(price < total) |>
-  inner_join(items, by = "orderid") |>
+x = items |>
   inner_join(products, by = "sku") |>
-  filter(str_detect(desc, "Noah")) |>
-  filter(price < wholesale_cost) |>
+  mutate(shop_price = qty * unit_price,
+         wholesale_price = qty * wholesale_cost) |>
+  group_by(orderid) |>
+  summarise(order_shop_price = sum(shop_price),
+            order_wholesale_price = sum(wholesale_price)) |>
+  filter(order_wholesale_price > order_shop_price) |>
+  inner_join(orders, by = "orderid") |>
+  count(customerid) |>
+  slice_max(n, n = 1, with_ties = F) |>
   inner_join(customers, by = "customerid") |>
-  slice_max(wholesale_cost, n = 1, with_ties = F) |>
   pull(phone)
 
 sprintf("solution: %s", x)
@@ -342,13 +354,10 @@ Can you figure out her ex-boyfriend’s phone number?
 ``` r
 df = customers |>
   filter(phone == "585-838-9161") |>
-  # select(customerid, name, phone) |>
   inner_join(items |>
   inner_join(orders, by = "orderid") |>
-  # select(orderid, sku, customerid, ordered) |>
   filter(str_detect(sku, "COL")), by = "customerid") |>
   inner_join(products, by = "sku") |>
-  select(customerid, name, phone, orderid, sku, ordered, desc) |>
   separate(desc, into = c("item", "color"), sep = " \\(") |>
   mutate(color = str_remove_all(color, "\\)"),
          min_order = ordered - minutes(1),
@@ -421,3 +430,230 @@ sprintf("solution: %s", x)
 ```
 
     ## [1] "solution: 212-547-3518"
+
+------------------------------------------------------------------------
+
+### Data Import - Speedrun
+
+``` r
+customers = read_csv("data/speedrun/noahs-customers.csv", show_col_types = F)
+items = read_csv("data/speedrun/noahs-orders_items.csv", show_col_types = F)
+orders = read_csv("data/speedrun/noahs-orders.csv", show_col_types = F)
+products = read_csv("data/speedrun/noahs-products.csv", show_col_types = F)
+```
+
+------------------------------------------------------------------------
+
+### The Investigator - Speedrun
+
+``` r
+data = customers |>
+  separate(name, into = c("first_name", "last_name"), sep = " ", remove = F) |>
+  mutate(phone_clean = str_remove_all(phone, "-"),
+         last_name = str_to_upper(last_name)) |>
+  select(last_name, phone_clean) |>
+  filter(nchar(last_name) == nchar(phone_clean)) |>
+  mutate(split_name = strsplit(last_name, ""))
+
+letter_values = c(A = 2, B = 2, C = 2, D = 3, E = 3, F = 3,
+                  G = 4, H = 4, I = 4, J = 5, K = 5, L = 5,
+                  M = 6, N = 6, O = 6, P = 7, Q = 7, R = 7,
+                  S = 7, T = 8, U = 8, V = 8, W = 9, X = 9, Y = 9, Z = 9)
+
+get_letter_value = function(letter) {
+  return(letter_values[letter])
+}
+
+name_to_num = function(name) {
+  letters = str_split(name, "") |> unlist()
+  values = sapply(letters, get_letter_value)
+  return(paste(values, collapse = ""))
+}
+
+x = data |>
+  mutate(name_as_num = sapply(split_name, name_to_num)) |>
+  filter(phone_clean == name_as_num) |>
+  pull(name_as_num)
+
+sprintf("solution: %s", paste0(substr(x, 1, 3), "-", substr(x, 4, 6), "-", substr(x, 7, 10)))
+```
+
+    ## [1] "solution: 767-365-7269"
+
+------------------------------------------------------------------------
+
+### The Contractor - Speedrun
+
+``` r
+possible_customers = customers |>
+  separate(name, into = c("first", "last"), sep = " ", remove = F) |>
+  mutate(fi = substr(first, 1, 1), li = substr(last, 1, 1)) |>
+  filter(fi == "D" & li == "S")
+
+possible_orders = orders |>
+  filter(year(shipped) == 2017)
+
+possible_products = products |>
+  filter(str_detect(desc, "Rug "))
+
+x = possible_products |>
+  inner_join(items, by = "sku") |>
+  inner_join(possible_orders, by = "orderid") |>
+  inner_join(possible_customers, by = "customerid") |>
+  distinct(name, phone) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 838-351-0370"
+
+------------------------------------------------------------------------
+
+### The Neighbor - Speedrun
+
+``` r
+years_of_goat = c(1943, 1955, 1967, 1979, 1991, 2003, 2015, 2027)
+
+possible_customers = customers |>
+  filter(year(birthdate) %in% years_of_goat &
+        (month(birthdate) == 9 & day(birthdate) >= 23 | month(birthdate) == 10 & day(birthdate) <= 22))
+
+contractor_zip = customers |>
+  filter(phone == "838-351-0370") |>
+  pull(citystatezip) |>
+  str_extract("\\d+")
+
+x = possible_customers |>
+  filter(str_detect(citystatezip, contractor_zip)) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 914-594-5535"
+
+------------------------------------------------------------------------
+
+### The Early Bird - Speedrun
+
+``` r
+x = products |>
+  filter(str_detect(sku, "BKY")) |>
+  inner_join(items, by = "sku") |>
+  filter(qty > 1) |>
+  inner_join(orders, by = "orderid") |>
+  filter(hour(shipped) == 4 & minute(shipped) >= 50) |>
+  distinct(customerid) |>
+  inner_join(customers, by = "customerid") |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 716-789-4433"
+
+------------------------------------------------------------------------
+
+### The Cat Lady - Speedrun
+
+``` r
+x = items |>
+  filter(str_detect(sku, "PET") & qty >= 10) |>
+  inner_join(orders, by = "orderid") |>
+  inner_join(customers, by = "customerid") |>
+  distinct(name, phone) |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 347-835-2358"
+
+------------------------------------------------------------------------
+
+### The Bargain Hunter - Speedrun
+
+``` r
+x = items |>
+  inner_join(products, by = "sku") |>
+  mutate(shop_price = qty * unit_price,
+         wholesale_price = qty * wholesale_cost) |>
+  group_by(orderid) |>
+  summarise(order_shop_price = sum(shop_price),
+            order_wholesale_price = sum(wholesale_price)) |>
+  filter(order_wholesale_price > order_shop_price) |>
+  inner_join(orders, by = "orderid") |>
+  count(customerid) |>
+  slice_max(n, n = 1, with_ties = F) |>
+  inner_join(customers, by = "customerid") |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 838-295-7143"
+
+------------------------------------------------------------------------
+
+### The Meet Cute - Speedrun
+
+``` r
+good_id = customers |>
+  filter(phone == "838-295-7143") |>
+  pull(customerid)
+
+good_order = orders |>
+  filter(customerid == good_id) |>
+  inner_join(items, by = "orderid") |>
+  inner_join(products, by = "sku") |>
+  filter(str_detect(desc, "Noah")) |>
+  separate(desc, into = c("item", "color"), sep = " \\(")
+
+good_ordered = good_order$ordered
+good_shipped = good_order$shipped
+good_item = good_order$item
+
+orders |>
+  inner_join(items, by = "orderid") |>
+  filter(str_detect(sku, "COL")) |>
+  inner_join(products, by = "sku") |>
+  separate(desc, into = c("item", "color"), sep = " \\(") |>
+  filter(item == good_item) |>
+  filter(ordered >= good_ordered - minutes(15)) |>
+  filter(ordered <= good_ordered + minutes(15)) |>
+  inner_join(customers, by = "customerid") |>
+  distinct(name, phone)
+```
+
+    ## # A tibble: 1 × 2
+    ##   name          phone       
+    ##   <chr>         <chr>       
+    ## 1 Deborah Green 838-295-7143
+
+------------------------------------------------------------------------
+
+### The Collector - Speedrun
+
+``` r
+x = items |>
+  inner_join(orders, by = "orderid") |>
+  inner_join(customers, by = "customerid") |>
+  inner_join(products, by = "sku") |>
+  filter(str_detect(sku, "COL")) |>
+  separate(desc, into = c("item", "color"), sep = " \\(") |>
+  mutate(color = str_remove_all(color, "\\)")) |>
+  group_by(customerid, item) |>
+  summarise(n_items = n_distinct(color),
+            .groups = "drop") |>
+  filter(n_items == 12) |>
+  distinct(customerid) |>
+  inner_join(customers, by = "customerid") |>
+  pull(phone)
+
+sprintf("solution: %s", x)
+```
+
+    ## [1] "solution: 516-638-9966"
+
+------------------------------------------------------------------------
